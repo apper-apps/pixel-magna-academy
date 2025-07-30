@@ -242,4 +242,3 @@ const commentService = {
 };
 
 export default commentService;
-export default commentService;
