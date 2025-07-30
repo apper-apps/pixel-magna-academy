@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom"
 import Sidebar from "@/components/organisms/Sidebar"
 import Header from "@/components/organisms/Header"
 
-const Layout = () => {
+const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   
   return (
@@ -16,8 +16,8 @@ const Layout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 overflow-auto">
-          <Outlet />
+<main className="flex-1 overflow-auto">
+          {children || <Outlet />}
         </main>
       </div>
     </div>
