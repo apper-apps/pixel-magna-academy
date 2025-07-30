@@ -1,126 +1,417 @@
-import cohortsData from "@/services/mockData/cohorts.json"
-import userCohortsData from "@/services/mockData/userCohorts.json"
-import usersData from "@/services/mockData/users.json"
-
-let cohorts = [...cohortsData];
-let userCohorts = [...userCohortsData];
-let users = [...usersData];
+import { toast } from 'react-toastify';
 
 const cohortService = {
-  getAll() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const cohortsWithUsers = cohorts.map(cohort => {
-          const memberCount = userCohorts.filter(uc => uc.cohort_id === cohort.Id).length;
+  async getAll() {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "label" } },
+          { field: { Name: "created_at" } }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('cohort', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      // Get member counts for each cohort
+      const cohortsWithCounts = await Promise.all(
+        (response.data || []).map(async (cohort) => {
+          const memberCount = await this.getMemberCount(cohort.Id);
           return {
             ...cohort,
             memberCount
           };
-        });
-        resolve([...cohortsWithUsers]);
-      }, 300);
-    });
+        })
+      );
+
+      return cohortsWithCounts;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching cohorts:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return [];
+    }
   },
 
-  getById(id) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const cohort = cohorts.find(c => c.Id === parseInt(id));
-        if (cohort) {
-          const memberCount = userCohorts.filter(uc => uc.cohort_id === cohort.Id).length;
-          const members = userCohorts
-            .filter(uc => uc.cohort_id === cohort.Id)
-            .map(uc => {
-              const user = users.find(u => u.Id === uc.user_id);
-              return user ? { Id: user.Id, name: user.name, email: user.email } : null;
-            })
-            .filter(Boolean);
+  async getById(id) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "label" } },
+          { field: { Name: "created_at" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById('cohort', id, params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      const cohort = response.data;
+      const memberCount = await this.getMemberCount(id);
+      const members = await this.getMembers(id);
+
+      return {
+        ...cohort,
+        memberCount,
+        members
+      };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error(`Error fetching cohort with ID ${id}:`, error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return null;
+    }
+  },
+
+  async getMemberCount(cohortId) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } }
+        ],
+        where: [
+          {
+            FieldName: "cohort_id",
+            Operator: "EqualTo",
+            Values: [parseInt(cohortId)]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('user_cohort', params);
+      return response.success ? (response.data || []).length : 0;
+    } catch (error) {
+      return 0;
+    }
+  },
+
+  async getMembers(cohortId) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "user_id" } }
+        ],
+        where: [
+          {
+            FieldName: "cohort_id",
+            Operator: "EqualTo",
+            Values: [parseInt(cohortId)]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('user_cohort', params);
+      
+      if (!response.success) {
+        return [];
+      }
+
+      // Get user details for each member
+      const members = await Promise.all(
+        (response.data || []).map(async (userCohort) => {
+          const userParams = {
+            fields: [
+              { field: { Name: "Name" } },
+              { field: { Name: "email" } }
+            ]
+          };
           
-          resolve({
-            ...cohort,
-            memberCount,
-            members
-          });
-        } else {
-          reject(new Error("Cohort not found"));
-        }
-      }, 250);
-    });
+          const userResponse = await apperClient.getRecordById('app_User', userCohort.user_id?.Id || userCohort.user_id, userParams);
+          
+          if (userResponse.success && userResponse.data) {
+            return {
+              Id: userResponse.data.Id,
+              Name: userResponse.data.Name,
+              email: userResponse.data.email
+            };
+          }
+          return null;
+        })
+      );
+
+      return members.filter(Boolean);
+    } catch (error) {
+      return [];
+    }
   },
 
-  getUserCohorts(userId) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const userCohortIds = userCohorts
-          .filter(uc => uc.user_id === parseInt(userId))
-          .map(uc => uc.cohort_id);
-        
-        const userCohortsList = cohorts.filter(c => userCohortIds.includes(c.Id));
-        resolve([...userCohortsList]);
-      }, 200);
-    });
+  async getUserCohorts(userId) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "cohort_id" } }
+        ],
+        where: [
+          {
+            FieldName: "user_id",
+            Operator: "EqualTo",
+            Values: [parseInt(userId)]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('user_cohort', params);
+
+      if (!response.success) {
+        return [];
+      }
+
+      // Get cohort details for each enrollment
+      const cohorts = await Promise.all(
+        (response.data || []).map(async (userCohort) => {
+          const cohortParams = {
+            fields: [
+              { field: { Name: "Name" } },
+              { field: { Name: "Tags" } },
+              { field: { Name: "label" } },
+              { field: { Name: "created_at" } }
+            ]
+          };
+          
+          const cohortResponse = await apperClient.getRecordById('cohort', userCohort.cohort_id?.Id || userCohort.cohort_id, cohortParams);
+          
+          return cohortResponse.success ? cohortResponse.data : null;
+        })
+      );
+
+      return cohorts.filter(Boolean);
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching user cohorts:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return [];
+    }
   },
 
-  enrollUser(cohortId, userId) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const cohort = cohorts.find(c => c.Id === parseInt(cohortId));
-        const user = users.find(u => u.Id === parseInt(userId));
-        
-        if (!cohort || !user) {
-          reject(new Error("Cohort or user not found"));
-          return;
-        }
+  async enrollUser(cohortId, userId) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
 
-        const isAlreadyEnrolled = userCohorts.some(
-          uc => uc.cohort_id === parseInt(cohortId) && uc.user_id === parseInt(userId)
-        );
+      // Check if already enrolled
+      const existingParams = {
+        fields: [
+          { field: { Name: "Name" } }
+        ],
+        where: [
+          {
+            FieldName: "cohort_id",
+            Operator: "EqualTo",
+            Values: [parseInt(cohortId)]
+          },
+          {
+            FieldName: "user_id",
+            Operator: "EqualTo",
+            Values: [parseInt(userId)]
+          }
+        ]
+      };
 
-        if (isAlreadyEnrolled) {
-          reject(new Error("User already enrolled in this cohort"));
-          return;
-        }
+      const existingResponse = await apperClient.fetchRecords('user_cohort', existingParams);
+      
+      if (existingResponse.success && existingResponse.data && existingResponse.data.length > 0) {
+        toast.error("User already enrolled in this cohort");
+        return { success: false, message: "User already enrolled in this cohort" };
+      }
 
-        userCohorts.push({
+      // Create enrollment
+      const params = {
+        records: [{
+          Name: `Enrollment ${cohortId}-${userId}`,
           user_id: parseInt(userId),
           cohort_id: parseInt(cohortId)
-        });
+        }]
+      };
 
-        resolve({ success: true, message: "Successfully enrolled in cohort" });
-      }, 400);
-    });
+      const response = await apperClient.createRecord('user_cohort', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return { success: false, message: response.message };
+      }
+
+      toast.success("Successfully enrolled in cohort");
+      return { success: true, message: "Successfully enrolled in cohort" };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error enrolling user:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return { success: false, message: "Error enrolling user" };
+    }
   },
 
-  unenrollUser(cohortId, userId) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = userCohorts.findIndex(
-          uc => uc.cohort_id === parseInt(cohortId) && uc.user_id === parseInt(userId)
-        );
+  async unenrollUser(cohortId, userId) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
 
-        if (index !== -1) {
-          userCohorts.splice(index, 1);
-          resolve({ success: true, message: "Successfully unenrolled from cohort" });
-        } else {
-          reject(new Error("Enrollment not found"));
+      // Find enrollment record
+      const findParams = {
+        fields: [
+          { field: { Name: "Name" } }
+        ],
+        where: [
+          {
+            FieldName: "cohort_id",
+            Operator: "EqualTo",
+            Values: [parseInt(cohortId)]
+          },
+          {
+            FieldName: "user_id",
+            Operator: "EqualTo",
+            Values: [parseInt(userId)]
+          }
+        ]
+      };
+
+      const findResponse = await apperClient.fetchRecords('user_cohort', findParams);
+      
+      if (!findResponse.success || !findResponse.data || findResponse.data.length === 0) {
+        toast.error("Enrollment not found");
+        return { success: false, message: "Enrollment not found" };
+      }
+
+      // Delete enrollment
+      const params = {
+        RecordIds: [findResponse.data[0].Id]
+      };
+
+      const response = await apperClient.deleteRecord('user_cohort', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return { success: false, message: response.message };
+      }
+
+      toast.success("Successfully unenrolled from cohort");
+      return { success: true, message: "Successfully unenrolled from cohort" };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error unenrolling user:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return { success: false, message: "Error unenrolling user" };
+    }
+  },
+
+  async create(cohortData) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        records: [{
+          Name: cohortData.Name || cohortData.label,
+          Tags: cohortData.Tags || "",
+          label: cohortData.label,
+          created_at: new Date().toISOString()
+        }]
+      };
+
+      const response = await apperClient.createRecord('cohort', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create cohort ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
         }
-      }, 300);
-    });
-  },
 
-  create(cohortData) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newCohort = {
-          Id: Math.max(...cohorts.map(c => c.Id)) + 1,
-          ...cohortData,
-          created_at: new Date().toISOString(),
-          memberCount: 0
-        };
-        cohorts.push(newCohort);
-        resolve({ ...newCohort });
-      }, 400);
-    });
+        const newCohort = successfulRecords.length > 0 ? successfulRecords[0].data : null;
+        if (newCohort) {
+          return {
+            ...newCohort,
+            memberCount: 0
+          };
+        }
+      }
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error creating cohort:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return null;
+    }
   }
 };
 

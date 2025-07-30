@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 
-const videoService = {
+const userService = {
   async getAll() {
     try {
       const { ApperClient } = window.ApperSDK;
@@ -13,13 +13,14 @@ const videoService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "Tags" } },
-          { field: { Name: "title" } },
-          { field: { Name: "embed_url" } },
-          { field: { Name: "category_id" } }
+          { field: { Name: "email" } },
+          { field: { Name: "role" } },
+          { field: { Name: "community_enabled" } },
+          { field: { Name: "created_at" } }
         ]
       };
 
-      const response = await apperClient.fetchRecords('video', params);
+      const response = await apperClient.fetchRecords('app_User', params);
 
       if (!response.success) {
         console.error(response.message);
@@ -30,7 +31,7 @@ const videoService = {
       return response.data || [];
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error("Error fetching videos:", error?.response?.data?.message);
+        console.error("Error fetching users:", error?.response?.data?.message);
       } else {
         console.error(error.message);
       }
@@ -50,13 +51,14 @@ const videoService = {
         fields: [
           { field: { Name: "Name" } },
           { field: { Name: "Tags" } },
-          { field: { Name: "title" } },
-          { field: { Name: "embed_url" } },
-          { field: { Name: "category_id" } }
+          { field: { Name: "email" } },
+          { field: { Name: "role" } },
+          { field: { Name: "community_enabled" } },
+          { field: { Name: "created_at" } }
         ]
       };
 
-      const response = await apperClient.getRecordById('video', id, params);
+      const response = await apperClient.getRecordById('app_User', id, params);
 
       if (!response.success) {
         console.error(response.message);
@@ -67,7 +69,7 @@ const videoService = {
       return response.data;
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error(`Error fetching video with ID ${id}:`, error?.response?.data?.message);
+        console.error(`Error fetching user with ID ${id}:`, error?.response?.data?.message);
       } else {
         console.error(error.message);
       }
@@ -75,51 +77,7 @@ const videoService = {
     }
   },
 
-  async getByCategory(categoryId) {
-    try {
-      const { ApperClient } = window.ApperSDK;
-      const apperClient = new ApperClient({
-        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
-        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
-      });
-
-      const params = {
-        fields: [
-          { field: { Name: "Name" } },
-          { field: { Name: "Tags" } },
-          { field: { Name: "title" } },
-          { field: { Name: "embed_url" } },
-          { field: { Name: "category_id" } }
-        ],
-        where: [
-          {
-            FieldName: "category_id",
-            Operator: "EqualTo",
-            Values: [parseInt(categoryId)]
-          }
-        ]
-      };
-
-      const response = await apperClient.fetchRecords('video', params);
-
-      if (!response.success) {
-        console.error(response.message);
-        toast.error(response.message);
-        return [];
-      }
-
-      return response.data || [];
-    } catch (error) {
-      if (error?.response?.data?.message) {
-        console.error("Error fetching videos by category:", error?.response?.data?.message);
-      } else {
-        console.error(error.message);
-      }
-      return [];
-    }
-  },
-
-  async create(videoData) {
+  async create(userData) {
     try {
       const { ApperClient } = window.ApperSDK;
       const apperClient = new ApperClient({
@@ -129,15 +87,16 @@ const videoService = {
 
       const params = {
         records: [{
-          Name: videoData.Name || videoData.title,
-          Tags: videoData.Tags || "",
-          title: videoData.title,
-          embed_url: videoData.embed_url,
-          category_id: parseInt(videoData.category_id)
+          Name: userData.Name,
+          Tags: userData.Tags || "",
+          email: userData.email,
+          role: userData.role || "member",
+          community_enabled: userData.community_enabled || false,
+          created_at: new Date().toISOString()
         }]
       };
 
-      const response = await apperClient.createRecord('video', params);
+      const response = await apperClient.createRecord('app_User', params);
 
       if (!response.success) {
         console.error(response.message);
@@ -150,7 +109,7 @@ const videoService = {
         const failedRecords = response.results.filter(result => !result.success);
 
         if (failedRecords.length > 0) {
-          console.error(`Failed to create video ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          console.error(`Failed to create user ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
           
           failedRecords.forEach(record => {
             record.errors?.forEach(error => {
@@ -164,7 +123,7 @@ const videoService = {
       }
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error("Error creating video:", error?.response?.data?.message);
+        console.error("Error creating user:", error?.response?.data?.message);
       } else {
         console.error(error.message);
       }
@@ -172,7 +131,7 @@ const videoService = {
     }
   },
 
-  async update(id, videoData) {
+  async update(id, userData) {
     try {
       const { ApperClient } = window.ApperSDK;
       const apperClient = new ApperClient({
@@ -183,15 +142,15 @@ const videoService = {
       const params = {
         records: [{
           Id: parseInt(id),
-          Name: videoData.Name || videoData.title,
-          Tags: videoData.Tags || "",
-          title: videoData.title,
-          embed_url: videoData.embed_url,
-          category_id: parseInt(videoData.category_id)
+          Name: userData.Name,
+          Tags: userData.Tags || "",
+          email: userData.email,
+          role: userData.role,
+          community_enabled: userData.community_enabled
         }]
       };
 
-      const response = await apperClient.updateRecord('video', params);
+      const response = await apperClient.updateRecord('app_User', params);
 
       if (!response.success) {
         console.error(response.message);
@@ -204,7 +163,7 @@ const videoService = {
         const failedUpdates = response.results.filter(result => !result.success);
 
         if (failedUpdates.length > 0) {
-          console.error(`Failed to update video ${failedUpdates.length} records:${JSON.stringify(failedUpdates)}`);
+          console.error(`Failed to update user ${failedUpdates.length} records:${JSON.stringify(failedUpdates)}`);
           
           failedUpdates.forEach(record => {
             record.errors?.forEach(error => {
@@ -218,7 +177,7 @@ const videoService = {
       }
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error("Error updating video:", error?.response?.data?.message);
+        console.error("Error updating user:", error?.response?.data?.message);
       } else {
         console.error(error.message);
       }
@@ -238,7 +197,7 @@ const videoService = {
         RecordIds: [parseInt(id)]
       };
 
-      const response = await apperClient.deleteRecord('video', params);
+      const response = await apperClient.deleteRecord('app_User', params);
 
       if (!response.success) {
         console.error(response.message);
@@ -251,7 +210,7 @@ const videoService = {
         const failedDeletions = response.results.filter(result => !result.success);
 
         if (failedDeletions.length > 0) {
-          console.error(`Failed to delete video ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          console.error(`Failed to delete user ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
           
           failedDeletions.forEach(record => {
             if (record.message) toast.error(record.message);
@@ -262,7 +221,7 @@ const videoService = {
       }
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error("Error deleting video:", error?.response?.data?.message);
+        console.error("Error deleting user:", error?.response?.data?.message);
       } else {
         console.error(error.message);
       }
@@ -271,4 +230,4 @@ const videoService = {
   }
 };
 
-export default videoService;
+export default userService;

@@ -1,48 +1,204 @@
-import coursesData from "@/services/mockData/courses.json"
-
-let courses = [...coursesData];
+import { toast } from 'react-toastify';
 
 const courseService = {
-  getAll() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...courses]);
-      }, 300);
-    });
+  async getAll() {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "title" } },
+          { field: { Name: "description" } },
+          { field: { Name: "thumbnail" } },
+          { field: { Name: "required_membership" } },
+          { field: { Name: "is_free" } },
+          { field: { Name: "duration" } },
+          { field: { Name: "lessons" } }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('course', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching courses:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return [];
+    }
   },
 
-  getById(id) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const course = courses.find(c => c.Id === parseInt(id));
-        if (course) {
-          resolve({ ...course });
-        } else {
-          reject(new Error("Course not found"));
-        }
-      }, 200);
-    });
+  async getById(id) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "title" } },
+          { field: { Name: "description" } },
+          { field: { Name: "thumbnail" } },
+          { field: { Name: "required_membership" } },
+          { field: { Name: "is_free" } },
+          { field: { Name: "duration" } },
+          { field: { Name: "lessons" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById('course', id, params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error(`Error fetching course with ID ${id}:`, error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return null;
+    }
   },
 
-  getFreeCourses() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const freeCourses = courses.filter(c => c.is_free);
-        resolve([...freeCourses]);
-      }, 250);
-    });
+  async getFreeCourses() {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "title" } },
+          { field: { Name: "description" } },
+          { field: { Name: "thumbnail" } },
+          { field: { Name: "required_membership" } },
+          { field: { Name: "is_free" } },
+          { field: { Name: "duration" } },
+          { field: { Name: "lessons" } }
+        ],
+        where: [
+          {
+            FieldName: "is_free",
+            Operator: "EqualTo",
+            Values: [true]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('course', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching free courses:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return [];
+    }
   },
 
-  getCoursesByMembership(membershipLevel) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const availableCourses = courses.filter(c => 
-          c.is_free || c.required_membership <= membershipLevel
-        );
-        resolve([...availableCourses]);
-      }, 300);
-    });
+  async getCoursesByMembership(membershipLevel) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "title" } },
+          { field: { Name: "description" } },
+          { field: { Name: "thumbnail" } },
+          { field: { Name: "required_membership" } },
+          { field: { Name: "is_free" } },
+          { field: { Name: "duration" } },
+          { field: { Name: "lessons" } }
+        ],
+        whereGroups: [
+          {
+            operator: "OR",
+            subGroups: [
+              {
+                conditions: [
+                  {
+                    fieldName: "is_free",
+                    operator: "EqualTo",
+                    values: [true]
+                  }
+                ],
+                operator: "AND"
+              },
+              {
+                conditions: [
+                  {
+                    fieldName: "required_membership",
+                    operator: "LessThanOrEqualTo",
+                    values: [membershipLevel]
+                  }
+                ],
+                operator: "AND"
+              }
+            ]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('course', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching courses by membership:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      return [];
+    }
   }
 };
 
+export default courseService;
 export default courseService;
