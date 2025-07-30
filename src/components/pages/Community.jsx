@@ -1,12 +1,54 @@
 import { Card, CardContent, CardHeader } from "@/components/atoms/Card"
+import { useState } from "react"
 import Button from "@/components/atoms/Button"
 import ApperIcon from "@/components/ApperIcon"
 import CommunityFeed from "@/components/organisms/CommunityFeed"
+import NewPostModal from "@/components/molecules/NewPostModal"
+import ViewPostModal from "@/components/molecules/ViewPostModal"
 import authService from "@/services/api/authService"
 
 const Community = () => {
   const canCommunity = authService.canCommunity()
-  
+  const [showNewPostModal, setShowNewPostModal] = useState(false)
+  const [viewPostModal, setViewPostModal] = useState({ isOpen: false, postId: null })
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // Redirect if no community access
+  if (!canCommunity) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <ApperIcon name="Lock" size={64} className="text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-text mb-2">
+            커뮤니티 접근 권한이 없습니다
+          </h1>
+          <p className="text-gray-600 mb-6">
+            커뮤니티에 참여하려면 멤버십에 가입해주세요.
+          </p>
+          <Button variant="primary" onClick={() => window.location.href = '/checkout'}>
+            멤버십 가입하기
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const handleNewPost = () => {
+    setShowNewPostModal(true)
+  }
+
+  const handleViewPost = (postId) => {
+    setViewPostModal({ isOpen: true, postId })
+  }
+
+  const handlePostSaved = () => {
+    setRefreshKey(prev => prev + 1)
+  }
+
+  const handleCloseModals = () => {
+    setShowNewPostModal(false)
+    setViewPostModal({ isOpen: false, postId: null })
+  }
   if (!canCommunity) {
     return (
       <div className="container mx-auto px-6 py-8">
@@ -27,10 +69,9 @@ const Community = () => {
       </div>
     )
   }
-  
-  return (
+return (
     <div className="container mx-auto px-6 py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-text mb-2">
@@ -41,10 +82,15 @@ const Community = () => {
             </p>
           </div>
           
-          <Button variant="primary">
-            <ApperIcon name="PlusCircle" size={16} className="mr-2" />
-            새 글 작성
-          </Button>
+          {canCommunity && (
+            <button 
+              className="btn-main flex items-center space-x-2"
+              onClick={handleNewPost}
+            >
+              <span>✚</span>
+              <span>Write</span>
+            </button>
+          )}
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
@@ -88,8 +134,22 @@ const Community = () => {
             <p>• 텍스트 인플루언서 관련 주제로 소통해주세요</p>
           </CardContent>
         </Card>
-        
-        <CommunityFeed />
+<CommunityFeed 
+          key={refreshKey}
+          onViewPost={handleViewPost}
+        />
+
+        <NewPostModal
+          isOpen={showNewPostModal}
+          onClose={handleCloseModals}
+          onSave={handlePostSaved}
+        />
+
+        <ViewPostModal
+          postId={viewPostModal.postId}
+          isOpen={viewPostModal.isOpen}
+          onClose={handleCloseModals}
+        />
       </div>
     </div>
   )

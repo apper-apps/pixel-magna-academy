@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react"
-import { toast } from "react-toastify"
-import CommunityPost from "@/components/molecules/CommunityPost"
-import Loading from "@/components/ui/Loading"
-import Error from "@/components/ui/Error"
-import Empty from "@/components/ui/Empty"
-import communityService from "@/services/api/communityService"
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import DataTable from "@/components/organisms/DataTable";
+import communityService from "@/services/api/communityService";
+import Loading from "@/components/ui/Loading";
+import Error from "@/components/ui/Error";
+import Empty from "@/components/ui/Empty";
 
-const CommunityFeed = () => {
+const CommunityFeed = ({ onViewPost }) => {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -25,35 +25,67 @@ const CommunityFeed = () => {
       setError("게시글을 불러오는데 실패했습니다.")
     } finally {
       setLoading(false)
+}
+  }
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\. /g, '-').replace('.', '')
+  }
+
+  const handleRowClick = (post) => {
+    if (onViewPost) {
+      onViewPost(post.Id)
     }
   }
-  
-  const handleLikePost = async (postId) => {
-    try {
-      const updatedPost = await communityService.likePost(postId)
-      setPosts(prev => prev.map(post => 
-        post.Id === postId ? updatedPost : post
-      ))
-      toast.success("좋아요를 눌렀습니다!")
-    } catch (err) {
-      toast.error("좋아요 처리 중 오류가 발생했습니다.")
+
+  const columns = [
+    {
+      key: 'title',
+      title: '제목',
+      width: '40%',
+      sortable: true
+    },
+    {
+      key: 'likes',
+      title: '좋아요',
+      width: '15%',
+      sortable: true
+    },
+    {
+      key: 'comments',
+      title: '댓글',
+      width: '15%',
+      sortable: true
+    },
+    {
+      key: 'created_at',
+      title: '작성일',
+      width: '30%',
+      sortable: true,
+      format: formatDate
     }
-  }
-  
+  ]
+
   if (loading) return <Loading />
   if (error) return <Error message={error} onRetry={loadPosts} />
   if (posts.length === 0) return <Empty message="아직 작성된 게시글이 없습니다." />
   
   return (
-    <div className="space-y-6">
-      {posts.map((post) => (
-        <CommunityPost
-          key={post.Id}
-          post={post}
-          onLike={handleLikePost}
-        />
-      ))}
-    </div>
+    <DataTable
+      data={posts}
+      columns={columns}
+      onRowClick={handleRowClick}
+      searchable={true}
+      sortable={true}
+      paginated={true}
+      pageSize={10}
+      className="shadow-sm"
+    />
   )
 }
 
