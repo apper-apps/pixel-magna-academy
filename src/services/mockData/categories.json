@@ -1,0 +1,47 @@
+[
+  {
+    "Id": 1,
+    "name": "AI 글쓰기",
+    "parent_id": null
+  },
+  {
+    "Id": 2,
+    "name": "마케팅 전략",
+    "parent_id": null
+  },
+  {
+    "Id": 3,
+    "name": "개인 브랜딩",
+    "parent_id": null
+  },
+  {
+    "Id": 4,
+    "name": "GPT 활용법",
+    "parent_id": 1
+  },
+  {
+    "Id": 5,
+    "name": "프롬프트 엔지니어링",
+    "parent_id": 1
+  },
+  {
+    "Id": 6,
+    "name": "SNS 마케팅",
+    "parent_id": 2
+  },
+  {
+    "Id": 7,
+    "name": "콘텐츠 마케팅",
+    "parent_id": 2
+  },
+  {
+    "Id": 8,
+    "name": "퍼스널 브랜딩",
+    "parent_id": 3
+  },
+  {
+    "Id": 9,
+    "name": "인플루언서 되기",
+    "parent_id": 3
+  }
+]

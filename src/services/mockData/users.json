@@ -1,25 +1,33 @@
 [
   {
-    "Id": 1,
-    "email": "admin@magna.kr",
+    "id": 1,
     "name": "관리자",
+    "email": "admin@example.com",
     "role": "admin",
     "community_enabled": true,
     "created_at": "2024-01-01T00:00:00Z"
   },
   {
-    "Id": 2,
-    "email": "member@magna.kr",
-    "name": "일반 회원",
+    "id": 2,
+    "name": "김준태",
+    "email": "juntae@example.com",
     "role": "member",
     "community_enabled": true,
     "created_at": "2024-01-15T00:00:00Z"
   },
   {
-    "Id": 3,
-    "email": "guest@magna.kr",
-    "name": "게스트",
-    "role": "guest",
+    "id": 3,
+    "name": "이민수",
+    "email": "minsu@example.com",
+    "role": "member",
+    "community_enabled": true,
+    "created_at": "2024-01-20T00:00:00Z"
+  },
+  {
+    "id": 4,
+    "name": "박지현",
+    "email": "jihyun@example.com",
+    "role": "member",
     "community_enabled": false,
     "created_at": "2024-02-01T00:00:00Z"
   }

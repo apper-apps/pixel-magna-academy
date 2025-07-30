@@ -1,0 +1,50 @@
+[
+  {
+    "Id": 1,
+    "title": "ChatGPT로 완벽한 블로그 포스트 작성하기",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 4
+  },
+  {
+    "Id": 2,
+    "title": "프롬프트 최적화 5가지 핵심 원칙",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 5
+  },
+  {
+    "Id": 3,
+    "title": "인스타그램 알고리즘 완전 정복",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 6
+  },
+  {
+    "Id": 4,
+    "title": "바이럴 콘텐츠 제작의 비밀",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 7
+  },
+  {
+    "Id": 5,
+    "title": "개인 브랜드 구축 완벽 가이드",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 8
+  },
+  {
+    "Id": 6,
+    "title": "인플루언서 수익화 전략",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 9
+  },
+  {
+    "Id": 7,
+    "title": "AI 도구를 활용한 콘텐츠 자동화",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 1
+  },
+  {
+    "Id": 8,
+    "title": "효과적인 마케팅 퍼널 설계",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "category_id": 2
+  }
+]
